@@ -1,0 +1,23 @@
+# Root .gitignore for ReviewXplorer
+
+# Common
+.env
+.DS_Store
+.vscode/
+
+# Node.js (Frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/npm-debug.log*
+
+# Python (Backend)
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/env/
+backend/venv/
+backend/.venv/
+
+# Large files / Playwright
+.playwright/
+ms-playwright/

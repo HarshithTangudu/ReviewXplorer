@@ -1,0 +1,14 @@
+youtube-comment-downloader
+fastapi
+uvicorn
+transformers
+torch
+requests
+beautifulsoup4
+playwright
+praw
+pandas
+numpy
+scikit-learn
+pydantic
+python-dotenv
