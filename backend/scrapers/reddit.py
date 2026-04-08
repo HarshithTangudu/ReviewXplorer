@@ -14,24 +14,28 @@ class RedditScraper(BaseScraper):
         user_agent = os.getenv("REDDIT_USER_AGENT", "ReviewXplorer/1.0")
         
         if client_id and client_secret:
-            self.reddit = praw.Reddit(
-                client_id=client_id,
-                client_secret=client_secret,
-                user_agent=user_agent
-            )
+            try:
+                self.reddit = praw.Reddit(
+                    client_id=client_id,
+                    client_secret=client_secret,
+                    user_agent=user_agent
+                )
+            except Exception as e:
+                print(f"Reddit API Init error: {e}")
 
     def is_match(self, url: str) -> bool:
         return "reddit.com" in url.lower()
 
-    async def scrape(self, url: str) -> List[str]:
+    async def scrape(self, url: str, max_pages: int = 1) -> List[str]:
         if not self.reddit:
             return ["Reddit credentials not configured. Please add REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET to .env"]
         
         try:
             submission = self.reddit.submission(url=url)
-            submission.comments.replace_more(limit=0) # Get top level comments
+            # More pages = deeper comment tree
+            submission.comments.replace_more(limit=max_pages) 
             texts = []
-            for comment in submission.comments.list()[:100]:
+            for comment in submission.comments.list()[:max_pages*100]:
                 if hasattr(comment, 'body'):
                     texts.append(comment.body)
             return texts

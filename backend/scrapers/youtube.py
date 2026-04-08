@@ -7,13 +7,14 @@ class YouTubeScraper(BaseScraper):
     def is_match(self, url: str) -> bool:
         return "youtube.com" in url.lower() or "youtu.be" in url.lower()
 
-    async def scrape(self, url: str) -> List[str]:
+    async def scrape(self, url: str, max_pages: int = 1) -> List[str]:
         downloader = YoutubeCommentDownloader()
-        # Limit to 100 comments for performance
+        # Increase comment count based on max_pages (e.g. 100 per page)
+        limit = max_pages * 100
         comments = downloader.get_comments_from_url(url, sort_by=SORT_BY_RECENT)
         
         texts = []
-        for comment in itertools.islice(comments, 100):
+        for comment in itertools.islice(comments, limit):
             if 'text' in comment:
                 texts.append(comment['text'])
         
