@@ -38,12 +38,11 @@ Plans:
   1. Sentiment timeline/gauge chart is available and functional.
   2. Emotion breakdown provides tooltip-driven interactivity.
   3. Loading new data triggers fluid animations.
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: Implement dynamic sentiment charts
-- [ ] 02-02: Enhance emotion breakdown interactive tooltips
-- [ ] 02-03: Add broad UI animations on data load
+- [ ] 02-01: Recharts Emotion Breakdown & Contextual Tooltips
+- [ ] 02-02: Gauge & Animated Timeline for Sentiment
 
 ## Progress
 
@@ -53,4 +52,4 @@ Phases execute in numeric order: 1 → 2
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Stabilize Scraping Architecture | 1/1 | Complete   | 2026-04-09 |
-| 2. Modernize Data Visualizations | 0/3 | Not started | - |
+| 2. Modernize Data Visualizations | 0/2 | Not started | - |
