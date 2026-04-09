@@ -1,6 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
+import { EmotionChart } from './components/Dashboard/EmotionChart';
+import { SentimentGauge, SentimentTimeline } from './components/Dashboard/SentimentCharts';
 
 // --- Types ---
 interface CommentResult {
@@ -58,16 +60,6 @@ function App() {
     return data.results.filter((res) => res.sentiment === sentimentFilter);
   }, [data, sentimentFilter]);
 
-  const sentimentData = useMemo(() => 
-    data ? Object.entries(data.summary.sentiment_distribution).map(([name, value]) => ({ name, value })) : []
-  , [data]);
-
-  const emotionData = useMemo(() => 
-    data ? Object.entries(data.summary.emotion_distribution).map(([name, value]) => ({ name, value })) : []
-  , [data]);
-
-  const maxSentiment = useMemo(() => Math.max(...sentimentData.map(d => d.value), 1), [sentimentData]);
-  const maxEmotion = useMemo(() => Math.max(...emotionData.map(d => d.value), 1), [emotionData]);
 
   // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -128,37 +120,18 @@ function App() {
           <div className="grid-2">
             <div className="card glow-card">
               <h3>Sentiment Distribution</h3>
-              <div className="simple-bar-chart">
-                {sentimentData.map((item, idx) => (
-                  <div key={idx} className="bar-item">
-                    <div className="bar-label">
-                      <span>{item.name}</span>
-                      <span>{item.value}</span>
-                    </div>
-                    <div className="bar-bg">
-                      <div className="bar-fill" style={{ width: `${(item.value / maxSentiment) * 100}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <SentimentGauge distribution={data.summary.sentiment_distribution} />
             </div>
 
             <div className="card glow-card">
               <h3>Emotion Breakdown</h3>
-              <div className="simple-bar-chart">
-                {emotionData.map((item, idx) => (
-                  <div key={idx} className="bar-item">
-                    <div className="bar-label">
-                      <span>{item.name}</span>
-                      <span>{item.value}</span>
-                    </div>
-                    <div className="bar-bg">
-                      <div className="bar-fill emotion-bar" style={{ width: `${(item.value / maxEmotion) * 100}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <EmotionChart distribution={data.summary.emotion_distribution} rawResults={data.results} />
             </div>
+          </div>
+          
+          <div className="card glow-card" style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3>Sentiment Timeline</h3>
+            <SentimentTimeline rawResults={data.results} />
           </div>
 
           <div className="filter-section card glow-card">

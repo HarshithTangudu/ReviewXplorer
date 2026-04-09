@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { CommentResult } from '../../types';
+import type { CommentResult } from '../../types';
 import CommentCard from './CommentCard';
 
 interface CommentListProps {
