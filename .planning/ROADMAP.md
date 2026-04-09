@@ -12,7 +12,7 @@ The journey from the current prototype to version 1.1 with stable data ingestion
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Stabilize Scraping Architecture** - Fix Amazon and Flipkart scrapers against anti-bot/DOM changes
+- [x] **Phase 1: Stabilize Scraping Architecture** - Fix Amazon and Flipkart scrapers against anti-bot/DOM changes (completed 2026-04-09)
 - [ ] **Phase 2: Modernize Data Visualizations** - Implement interactive and animated visual charts
 
 ## Phase Details
@@ -25,11 +25,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   1. User can successfully scrape Amazon product reviews without bot blocking/errors.
   2. User can successfully scrape Flipkart product reviews without errors.
   3. Errors from missing URLs or blocked pages are displayed gracefully to the user.
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: Fix backend Playwright Amazon scraper
-- [ ] 01-02: Fix backend Playwright Flipkart scraper
+- [x] 01-01: Migrate Scrapers to Async Playwright
 
 ### Phase 2: Modernize Data Visualizations
 **Goal**: Elevate the user experience by building dynamic, "cooler" charts.
@@ -53,5 +52,5 @@ Phases execute in numeric order: 1 → 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Stabilize Scraping Architecture | 0/2 | Not started | - |
+| 1. Stabilize Scraping Architecture | 1/1 | Complete   | 2026-04-09 |
 | 2. Modernize Data Visualizations | 0/3 | Not started | - |
