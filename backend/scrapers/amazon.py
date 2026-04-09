@@ -1,23 +1,16 @@
 import asyncio
 import random
-import requests
-from bs4 import BeautifulSoup
-from .base import BaseScraper
 from typing import List
 import re
 from urllib.parse import urlparse
+from playwright.async_api import async_playwright, TimeoutError
+from .base import BaseScraper
 
 class AmazonScraper(BaseScraper):
     def is_match(self, url: str) -> bool:
         return "amazon" in url.lower()
 
     async def scrape(self, url: str, max_pages: int = 5) -> List[str]:
-        # A list of real-world mobile user agents which are often less blocked
-        mobile_uas = [
-            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1",
-            "Mozilla/5.0 (Linux; Android 14; Pixel Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.6312.80 Mobile Safari/537.36"
-        ]
-        
         parsed_url = urlparse(url)
         domain = parsed_url.netloc if parsed_url.netloc else "www.amazon.in"
         asin_match = re.search(r"/(?:dp|gp/product|product-reviews)/([A-Z0-9]{10})", url)
@@ -26,54 +19,57 @@ class AmazonScraper(BaseScraper):
         asin = asin_match.group(1)
         
         all_texts = []
-        
-        def fetch_worker(page_num):
-            # Specialized headers to mimic a real mobile browser
-            headers = {
-                "User-Agent": random.choice(mobile_uas),
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-                "Accept-Language": "en-US,en;q=0.5",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive",
-                "Upgrade-Insecure-Requests": "1"
-            }
-            
-            # Review page URL
-            target = f"https://{domain}/product-reviews/{asin}/?reviewerType=all_reviews&pageNumber={page_num}"
-            if page_num == 0: # Signal for product page fallback
-                target = f"https://{domain}/dp/{asin}"
-
-            try:
-                response = requests.get(target, headers=headers, timeout=20)
-                
-                # If blocked, try one more time with a different UA
-                if "Robot Check" in response.text or response.status_code != 200:
-                    headers["User-Agent"] = random.choice(mobile_uas)
-                    response = requests.get(target, headers=headers, timeout=20)
-                
-                soup = BeautifulSoup(response.content, 'html.parser')
-                # Amazon's review selectors (Desktop and Mobile)
-                reviews = soup.select("[data-hook='review-body'], .review-text-content, .review-text")
-                
-                return [r.get_text(strip=True) for r in reviews if len(r.get_text(strip=True)) > 20]
-            except:
-                return []
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
         print(f"Scraping Amazon reviews for ASIN: {asin}")
-        for p in range(1, max_pages + 1):
-            print(f"Page {p}...")
-            # Use threads for synchronous requests
-            page_data = await asyncio.to_thread(fetch_worker, p)
-            if not page_data: 
-                if p == 1:
-                    print("Trying product page fallback...")
-                    page_data = await asyncio.to_thread(lambda: fetch_worker(0))
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            context = await browser.new_context(user_agent=user_agent)
+            page = await context.new_page()
+
+            for page_num in range(1, max_pages + 1):
+                print(f"Page {page_num}...")
+                target = f"https://{domain}/product-reviews/{asin}/?reviewerType=all_reviews&pageNumber={page_num}"
                 
-                if not page_data:
+                try:
+                    await page.goto(target, wait_until="domcontentloaded")
+                    await page.wait_for_selector("[data-hook='review-body'], .review-text-content, .review-text", timeout=15000)
+                    
+                    locators = await page.locator("[data-hook='review-body'], .review-text-content, .review-text").all()
+                    texts = [await loc.inner_text() for loc in locators]
+                    
+                    added = 0
+                    for t in texts:
+                        clean_text = t.strip()
+                        if len(clean_text) > 20:
+                            all_texts.append(clean_text)
+                            added += 1
+                            
+                    if added == 0 and page_num == 1:
+                        print("Trying product page fallback...")
+                        target = f"https://{domain}/dp/{asin}"
+                        await page.goto(target, wait_until="domcontentloaded")
+                        await page.wait_for_selector("[data-hook='review-body'], .review-text-content, .review-text", timeout=15000)
+                        locators = await page.locator("[data-hook='review-body'], .review-text-content, .review-text").all()
+                        texts = [await loc.inner_text() for loc in locators]
+                        for t in texts:
+                            clean_text = t.strip()
+                            if len(clean_text) > 20:
+                                all_texts.append(clean_text)
+                                added += 1
+                    
+                    if added == 0:
+                        break  # No more reviews found
+
+                    await asyncio.sleep(random.uniform(1.5, 3.5))
+                except TimeoutError:
+                    print("Captcha or bot block encountered on Amazon. Halting scrape and returning gathered reviews.")
+                    break
+                except Exception as e:
+                    print(f"Exception scraping page {page_num}: {e}")
                     break
             
-            all_texts.extend(page_data)
-            await asyncio.sleep(random.uniform(1.5, 3.5))
-            
+            await browser.close()
+
         print(f"Final Count: {len(all_texts)}")
         return list(set(all_texts))
