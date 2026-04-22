@@ -12,3 +12,5 @@ numpy
 scikit-learn
 pydantic
 python-dotenv
+apify-client
+playwright-stealth

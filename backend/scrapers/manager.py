@@ -1,6 +1,7 @@
 from typing import List, Optional
 from .base import BaseScraper
 from .amazon import AmazonScraper
+from .apify_amazon import ApifyAmazonScraper
 from .flipkart import FlipkartScraper
 from .youtube import YouTubeScraper
 from .reddit import RedditScraper
@@ -8,6 +9,7 @@ from .reddit import RedditScraper
 class ScraperManager:
     def __init__(self):
         self.scrapers: List[BaseScraper] = [
+            ApifyAmazonScraper(),
             AmazonScraper(),
             FlipkartScraper(),
             YouTubeScraper(),
@@ -17,7 +19,10 @@ class ScraperManager:
     async def scrape(self, url: str) -> List[str]:
         for scraper in self.scrapers:
             if scraper.is_match(url):
-                return await scraper.scrape(url)
+                print(f"Trying scraper: {scraper.__class__.__name__}")
+                results = await scraper.scrape(url)
+                if results:
+                    return results
         return []
 
     def get_platform(self, url: str) -> str:

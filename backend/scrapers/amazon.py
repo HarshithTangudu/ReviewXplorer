@@ -4,6 +4,7 @@ from typing import List
 import re
 from urllib.parse import urlparse
 from playwright.async_api import async_playwright, TimeoutError
+from playwright_stealth import Stealth
 from .base import BaseScraper
 
 class AmazonScraper(BaseScraper):
@@ -19,21 +20,53 @@ class AmazonScraper(BaseScraper):
         asin = asin_match.group(1)
         
         all_texts = []
-        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
+        # Modern User Agent
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
-        print(f"Scraping Amazon reviews for ASIN: {asin}")
+        print(f"Scraping Amazon reviews locally using Stealth Playwright for ASIN: {asin}")
         async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=True)
-            context = await browser.new_context(user_agent=user_agent)
+            # We use channel='chrome' or 'msedge' if available for better stealth, 
+            # otherwise default chromium is fine with stealth plugin
+            browser = await p.chromium.launch(headless=True) 
+            
+            # Use a realistic viewport
+            context = await browser.new_context(
+                user_agent=user_agent,
+                viewport={'width': 1920, 'height': 1080}
+            )
+            
             page = await context.new_page()
+            
+            # Apply Stealth
+            await Stealth().apply_stealth_async(page)
 
             for page_num in range(1, max_pages + 1):
                 print(f"Page {page_num}...")
-                target = f"https://{domain}/product-reviews/{asin}/?reviewerType=all_reviews&pageNumber={page_num}"
+                target = f"https://{domain}/product-reviews/{asin}/?reviewerType=all_reviews&pageNumber={page_num}&sortBy=recent"
                 
                 try:
-                    await page.goto(target, wait_until="domcontentloaded")
-                    await page.wait_for_selector("[data-hook='review-body'], .review-text-content, .review-text", timeout=15000)
+                    # Random delay before navigation
+                    await asyncio.sleep(random.uniform(2, 4))
+                    
+                    await page.goto(target, wait_until="domcontentloaded", timeout=60000)
+                    
+                    # Human-like scroll
+                    await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
+                    await asyncio.sleep(random.uniform(1, 2))
+                    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    
+                    # Wait for reviews to appear
+                    try:
+                        await page.wait_for_selector("[data-hook='review-body'], .review-text-content, .review-text", timeout=15000)
+                    except TimeoutError:
+                        # Check for Robot Check
+                        content = await page.content()
+                        if "Robot Check" in content or "api-services-support@amazon.com" in content:
+                            print("Amazon blocked the request with a Captcha. Stopping.")
+                            break
+                        else:
+                            print(f"No reviews found on page {page_num}. Ending.")
+                            break
                     
                     locators = await page.locator("[data-hook='review-body'], .review-text-content, .review-text").all()
                     texts = [await loc.inner_text() for loc in locators]
@@ -41,35 +74,24 @@ class AmazonScraper(BaseScraper):
                     added = 0
                     for t in texts:
                         clean_text = t.strip()
+                        # Remove 'Read more' text if present in extraction
+                        if clean_text.endswith("Read more"):
+                            clean_text = clean_text[:-9].strip()
+                            
                         if len(clean_text) > 20:
                             all_texts.append(clean_text)
                             added += 1
                             
-                    if added == 0 and page_num == 1:
-                        print("Trying product page fallback...")
-                        target = f"https://{domain}/dp/{asin}"
-                        await page.goto(target, wait_until="domcontentloaded")
-                        await page.wait_for_selector("[data-hook='review-body'], .review-text-content, .review-text", timeout=15000)
-                        locators = await page.locator("[data-hook='review-body'], .review-text-content, .review-text").all()
-                        texts = [await loc.inner_text() for loc in locators]
-                        for t in texts:
-                            clean_text = t.strip()
-                            if len(clean_text) > 20:
-                                all_texts.append(clean_text)
-                                added += 1
+                    print(f"Extracted {added} reviews from page {page_num}.")
                     
                     if added == 0:
-                        break  # No more reviews found
+                        break
 
-                    await asyncio.sleep(random.uniform(1.5, 3.5))
-                except TimeoutError:
-                    print("Captcha or bot block encountered on Amazon. Halting scrape and returning gathered reviews.")
-                    break
                 except Exception as e:
                     print(f"Exception scraping page {page_num}: {e}")
                     break
             
             await browser.close()
 
-        print(f"Final Count: {len(all_texts)}")
+        print(f"Total reviews collected for free: {len(all_texts)}")
         return list(set(all_texts))
