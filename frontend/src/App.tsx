@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import axios from 'axios';
 import './App.css';
-import { EmotionChart } from './components/Dashboard/EmotionChart';
+import { EmotionChart, EmotionRadar } from './components/Dashboard/EmotionChart';
 import { SentimentGauge, SentimentTimeline } from './components/Dashboard/SentimentCharts';
+import { WordCloud } from './components/Dashboard/WordCloud';
 
 // --- Types ---
 interface CommentResult {
@@ -126,6 +127,16 @@ function App() {
             <div className="card glow-card">
               <h3>Emotion Breakdown</h3>
               <EmotionChart distribution={data.summary.emotion_distribution} rawResults={data.results} />
+            </div>
+
+            <div className="card glow-card">
+              <h3>Emotion Profile</h3>
+              <EmotionRadar distribution={data.summary.emotion_distribution} rawResults={data.results} />
+            </div>
+
+            <div className="card glow-card">
+              <h3>Top Keywords</h3>
+              <WordCloud texts={data.results.map(r => r.text)} />
             </div>
           </div>
           
