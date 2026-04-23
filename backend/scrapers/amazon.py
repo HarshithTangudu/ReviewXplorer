@@ -43,7 +43,7 @@ class AmazonScraper(BaseScraper):
             try: await Stealth().apply_stealth_async(page)
             except: pass
 
-            # FALLBACK 1: Try product page directly (often has top reviews)
+            # FALLBACK 1: Try product page directly
             try:
                 print(f"📦 [Amazon] Checking product page for reviews...")
                 await page.goto(f"https://{domain}/dp/{asin}/", wait_until="load")
@@ -51,12 +51,11 @@ class AmazonScraper(BaseScraper):
                 await page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
                 await asyncio.sleep(2)
                 
-                # Try extraction from product page
                 found = await self._extract_from_page(page, all_texts)
                 print(f"✨ [Amazon] Product page: Found {found} reviews.")
             except: pass
 
-            # If we need more reviews, try the review pages
+            # FALLBACK 2: Try review pages
             if len(all_texts) < 5:
                 for page_num in range(1, max_pages + 1):
                     target = f"https://{domain}/product-reviews/{asin}/?reviewerType=all_reviews&pageNumber={page_num}&sortBy=recent"
@@ -68,11 +67,7 @@ class AmazonScraper(BaseScraper):
                         
                         if "Sign-In" in await page.title():
                             print(f"⚠️  [Amazon] Blocked by Sign-In on page {page_num}.")
-                            # Try mobile version as last resort
-                            if page_num == 1:
-                                await page.goto(f"https://{domain}/gp/aw/reviews/{asin}/", wait_until="load")
-                                await asyncio.sleep(3)
-                            else: break
+                            break
                             
                         found = await self._extract_from_page(page, all_texts)
                         print(f"✨ [Amazon] Page {page_num}: Found {found} new reviews.")

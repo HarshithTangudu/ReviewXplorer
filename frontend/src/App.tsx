@@ -35,7 +35,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [sentimentFilter, setSentimentFilter] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 20; // Increased for better visibility
 
   const handleAnalyze = async () => {
     if (!url) return;
@@ -59,7 +59,8 @@ function App() {
   const filteredResults = useMemo(() => {
     if (!data) return [];
     if (sentimentFilter === 'All') return data.results;
-    return data.results.filter((res) => res.sentiment === sentimentFilter);
+    // Case-insensitive filtering
+    return data.results.filter((res) => res.sentiment.toUpperCase() === sentimentFilter.toUpperCase());
   }, [data, sentimentFilter]);
 
 
