@@ -23,6 +23,7 @@ interface AnalysisData {
     emotion_distribution: Record<string, number>;
     sarcasm_percentage: number;
   };
+  ai_summary?: string;
 }
 
 const API_BASE_URL = 'http://localhost:8000';
@@ -117,6 +118,20 @@ function App() {
               <p className="stat-value">{data.summary.sarcasm_percentage.toFixed(1)}%</p>
             </div>
           </div>
+
+          {data.ai_summary && (
+            <div className="card ai-summary-card glow-card-purple" style={{ marginBottom: '1.5rem' }}>
+              <div className="ai-summary-header">
+                <span className="ai-icon">✨</span>
+                <h3>AI Product Insight</h3>
+              </div>
+              <div className="ai-summary-content">
+                {data.ai_summary.split('\n').map((para, i) => (
+                  <p key={i}>{para}</p>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid-2">
             <div className="card glow-card">

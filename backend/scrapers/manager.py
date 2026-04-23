@@ -2,6 +2,7 @@ from typing import List, Optional
 from .base import BaseScraper
 from .amazon import AmazonScraper
 from .apify_amazon import ApifyAmazonScraper
+from .apify_flipkart import ApifyFlipkartScraper
 from .flipkart import FlipkartScraper
 from .youtube import YouTubeScraper
 from .reddit import RedditScraper
@@ -10,6 +11,7 @@ class ScraperManager:
     def __init__(self):
         self.scrapers: List[BaseScraper] = [
             ApifyAmazonScraper(),
+            ApifyFlipkartScraper(),
             AmazonScraper(),
             FlipkartScraper(),
             YouTubeScraper(),

@@ -17,4 +17,5 @@ export interface AnalysisData {
   total_comments: number;
   results: CommentResult[];
   summary: SummaryData;
+  ai_summary?: string;
 }

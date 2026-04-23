@@ -35,6 +35,7 @@ class AnalysisResponse(BaseModel):
     total_comments: int
     results: List[CommentResult]
     summary: dict
+    ai_summary: Optional[str] = None
 
 @app.get("/")
 async def root():
@@ -56,11 +57,15 @@ async def analyze_url(request: AnalysisRequest):
     results = analyzer_service.analyze(comments)
     summary = analyzer_service.get_summary(results)
     
+    # Generate AI Summary
+    ai_summary = await analyzer_service.get_ai_summary(results, summary)
+    
     return {
         "platform": platform,
         "total_comments": len(results),
         "results": results,
-        "summary": summary
+        "summary": summary,
+        "ai_summary": ai_summary
     }
 
 if __name__ == "__main__":
